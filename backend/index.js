@@ -354,7 +354,6 @@
 
 
 
-
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
@@ -367,20 +366,23 @@ const OpenAI = require("openai");
 const app = express();
 
 /* =========================
-   FIXED CORS (THE KEY FIX)
+   ROBUST CORS CONFIGURATION
+   (Fixes the "(failed)" Network Error)
 ========================= */
-// This allows your frontend to talk to your backend without being blocked
 app.use(cors({
-  origin: "*", // In production, replace * with your actual frontend URL
+  origin: "*", 
   methods: ["GET", "POST", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
 }));
 
+// Explicitly handle pre-flight OPTIONS requests
+app.options('*', cors()); 
+
 app.use(express.json({ limit: "5mb" }));
 
 /* =========================
-   OPENAI
+   OPENAI INITIALIZATION
 ========================= */
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -388,6 +390,7 @@ const openai = new OpenAI({
 
 /* =========================
    FILE UPLOAD CONFIG
+   (Uses /tmp for Vercel Serverless)
 ========================= */
 const upload = multer({
   dest: "/tmp", 
@@ -395,7 +398,7 @@ const upload = multer({
 });
 
 /* =========================
-   ATS SCORING ENGINE (Kept Intact)
+   ATS SCORING ENGINE
 ========================= */
 function scoreResume(text) {
   const lower = text.toLowerCase();
@@ -468,6 +471,7 @@ function generateSuggestions(flags, score) {
   if (flags.weakVerbs) suggestions.push("Use strong action verbs to start bullet points");
   if (flags.formattingIssue) suggestions.push("Avoid tables, icons, or complex formatting (ATS issue)");
   if (flags.weakExperience) suggestions.push("Add clearer role titles and experience descriptions");
+  
   if (suggestions.length === 0) {
     suggestions.push(score >= 80 ? "Strong ATS-optimized resume" : "Resume is ATS-friendly but can be optimized further");
   }
@@ -475,12 +479,13 @@ function generateSuggestions(flags, score) {
 }
 
 /* =========================
-   ROUTES
+   API ROUTES
 ========================= */
 
-// New Root route to verify health
+// Health Check Route
 app.get("/", (req, res) => res.status(200).send("ATS Backend is Live!"));
 
+// Analyze Resume Route
 app.post("/analyze", upload.single("resume"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
@@ -516,29 +521,39 @@ app.post("/analyze", upload.single("resume"), async (req, res) => {
   }
 });
 
+// Job Description Matching Route
 app.post("/match-jd", (req, res) => {
   const { resumeText = "", jdText = "" } = req.body;
   if (!resumeText || !jdText) return res.json({ matchScore: 0 });
+  
   const resumeWords = new Set(resumeText.toLowerCase().split(/\W+/));
   const jdWords = new Set(jdText.toLowerCase().split(/\W+/));
+  
   let matched = 0;
   jdWords.forEach(w => { if (w.length > 3 && resumeWords.has(w)) matched++; });
+  
   res.json({ matchScore: Math.min(Math.round((matched / jdWords.size) * 100), 100) });
 });
 
+// AI Rewrite Route
 app.post("/rewrite", async (req, res) => {
   try {
     const { resumeText } = req.body;
     if (!resumeText) return res.status(400).json({ error: "Invalid resume text" });
+    
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [{ role: "user", content: `Rewrite this resume for ATS:\n${resumeText}` }],
       temperature: 0.4
     });
+    
     res.json({ rewrittenResume: response.choices[0].message.content });
   } catch (err) {
     res.status(500).json({ error: "AI rewrite failed" });
   }
 });
 
+/* =========================
+   VERCEL EXPORT
+========================= */
 module.exports = app;
