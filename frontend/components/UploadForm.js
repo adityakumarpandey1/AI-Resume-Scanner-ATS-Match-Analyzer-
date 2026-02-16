@@ -13,17 +13,23 @@ export default function UploadForm() {
     const formData = new FormData();
     formData.append("resume", file);
 
+    // This looks for the Netlify variable; if not found, it defaults to localhost
+    const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+
     try {
-      const res = await fetch("http://localhost:5000/analyze", {
+      const res = await fetch(`${BACKEND_URL}/analyze`, {
         method: "POST",
         body: formData,
       });
 
+      if (!res.ok) throw new Error("Server error");
+
       const data = await res.json();
       localStorage.setItem("result", JSON.stringify(data));
       router.push("/result");
-    } catch {
-      alert("Failed to analyze resume");
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("Failed to analyze resume. Make sure the backend is running!");
     } finally {
       setLoading(false);
     }
@@ -42,12 +48,10 @@ export default function UploadForm() {
 
       {/* BUTTON ROW */}
       <div className="button-row">
-        {/* Upload button */}
         <label htmlFor="resume-upload" className="file-button">
-          Choose Resume
+          {file ? "Change Resume" : "Choose Resume"}
         </label>
 
-        {/* Analyze button */}
         <button
           onClick={submit}
           disabled={loading}
@@ -57,16 +61,22 @@ export default function UploadForm() {
         </button>
       </div>
 
-      {/* PDF PREVIEW LINK (separate from label) */}
-      {file && file.type === "application/pdf" && (
+      {/* PDF PREVIEW LINK */}
+      {file && (
         <div className="file-preview">
-          <a
-            href={URL.createObjectURL(file)}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            📄 {file.name}
-          </a>
+          <p style={{ marginTop: "10px", color: "#666" }}>
+            Selected: <strong>{file.name}</strong>
+          </p>
+          {file.type === "application/pdf" && (
+            <a
+              href={URL.createObjectURL(file)}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: "#0070f3", textDecoration: "underline" }}
+            >
+              View PDF Preview
+            </a>
+          )}
         </div>
       )}
     </>
