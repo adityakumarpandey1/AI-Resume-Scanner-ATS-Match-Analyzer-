@@ -6,34 +6,36 @@ export default function UploadForm() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  async function submit() {
-    if (!file) return alert("Please upload a resume");
+ async function submit() {
+  if (!file) return alert("Please upload a resume");
+  setLoading(true);
 
-    setLoading(true);
-    const formData = new FormData();
-    formData.append("resume", file);
+  const formData = new FormData();
+  formData.append("resume", file);
 
-    // This looks for the Netlify variable; if not found, it defaults to localhost
-    const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+  // Clean the URL to avoid double slashes like ...app//analyze
+  let BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+  BACKEND_URL = BACKEND_URL.replace(/\/$/, ""); 
 
-    try {
-      const res = await fetch(`${BACKEND_URL}/analyze`, {
-        method: "POST",
-        body: formData,
-      });
+  try {
+    const res = await fetch(`${BACKEND_URL}/analyze`, {
+      method: "POST",
+      body: formData,
+      // Do NOT set headers manually; browser handles FormData headers
+    });
 
-      if (!res.ok) throw new Error("Server error");
+    if (!res.ok) throw new Error("Server error");
 
-      const data = await res.json();
-      localStorage.setItem("result", JSON.stringify(data));
-      router.push("/result");
-    } catch (error) {
-      console.error("Upload error:", error);
-      alert("Failed to analyze resume. Make sure the backend is running!");
-    } finally {
-      setLoading(false);
-    }
+    const data = await res.json();
+    localStorage.setItem("result", JSON.stringify(data));
+    router.push("/result");
+  } catch (error) {
+    console.error("Upload error:", error);
+    alert("Failed to analyze resume. Check the Network tab in DevTools!");
+  } finally {
+    setLoading(false);
   }
+}
 
   return (
     <>
