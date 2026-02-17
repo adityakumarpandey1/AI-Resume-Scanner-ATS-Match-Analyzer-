@@ -361,10 +361,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.get("/api", (req, res) => {
+app.get("/", (req, res) => {
   res.json({ message: "ATS Backend is running 🚀" });
 });
 
-// other routes...
-
-module.exports = app; // 🔥 REQUIRED
+module.exports = app;
