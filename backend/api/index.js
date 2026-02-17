@@ -353,66 +353,30 @@
 // );
 
 
-
-require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
 const pdf = require("pdf-parse");
 const mammoth = require("mammoth");
 const fs = require("fs");
-const OpenAI = require("openai");
 
 const app = express();
 
-/* =========================
-   ROBUST CORS FOR VERCEL
-========================= */
-app.use(cors({
-  origin: "*", 
-  methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true
-}));
-
-app.options('*', cors()); 
+app.use(cors({ origin: "*" }));
 app.use(express.json({ limit: "5mb" }));
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+const upload = multer({ dest: "/tmp" });
+
+app.get("/", (req, res) => {
+  res.send("ATS Backend is Live!");
 });
-
-// Use /tmp for Vercel serverless compatibility
-const upload = multer({
-  dest: "/tmp", 
-  limits: { fileSize: 5 * 1024 * 1024 }
-});
-
-function scoreResume(text) {
-  const lower = text.toLowerCase();
-  let score = 0;
-  const matched = [];
-  const keywordWeights = { javascript: 6, node: 6, express: 5, react: 6, mongodb: 5 };
-  for (const key in keywordWeights) {
-    if (lower.includes(key)) { 
-      score += keywordWeights[key]; 
-      matched.push(key); 
-    }
-  }
-  return { score: Math.min(score, 100), matched };
-}
-
-/* =========================
-   ROUTES
-========================= */
-
-// Health check: visiting the URL in browser should show this text
-app.get("/", (req, res) => res.status(200).send("ATS Backend is Live!"));
 
 app.post("/analyze", upload.single("resume"), async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
-    
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
     let text = "";
     if (req.file.mimetype === "application/pdf") {
       const data = await pdf(fs.readFileSync(req.file.path));
@@ -421,24 +385,13 @@ app.post("/analyze", upload.single("resume"), async (req, res) => {
       const result = await mammoth.extractRawText({ path: req.file.path });
       text = result.value;
     }
-    
-    // Cleanup temporary file
-    if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path); 
 
-    const analysis = scoreResume(text);
-    res.json({ 
-      score: analysis.score, 
-      matchedKeywords: analysis.matched, 
-      resumeText: text 
-    });
+    fs.unlinkSync(req.file.path);
+
+    res.json({ score: 75, resumeText: text });
   } catch (err) {
-    console.error("Analysis Error:", err);
-    res.status(500).json({ error: "Analysis failed", details: err.message });
+    res.status(500).json({ error: err.message });
   }
 });
 
-/* =========================
-   VERCEL EXPORT
-========================= */
-// DO NOT use app.listen(5000)
 module.exports = app;
