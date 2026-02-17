@@ -52,12 +52,14 @@ export default function Result() {
           resumeText: data.resumeText || "",
         }),
       });
+
       const result = await res.json();
 
       if (!res.ok) {
         alert(result.error || "AI rewrite failed");
         return;
       }
+
       setAiResume(result.rewrittenResume || "");
     } catch (err) {
       console.error("AI rewrite failed", err);
@@ -79,6 +81,7 @@ export default function Result() {
           jdText: jd,
         }),
       });
+
       const result = await res.json();
       setJdScore(result.matchScore);
     } catch (err) {
@@ -172,12 +175,11 @@ export default function Result() {
             {rewriting ? "Improving..." : "AI Improve Resume"}
           </button>
 
+          {/* ✅ FIXED AI OUTPUT BLOCK */}
           {aiResume && (
-            <textarea
-              className={styles.aiTextarea}
-              value={aiResume}
-              readOnly
-            />
+            <div className={styles.aiResult}>
+              {aiResume}
+            </div>
           )}
         </div>
 

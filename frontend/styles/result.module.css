@@ -4,16 +4,22 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 40px 16px; /* ✅ prevents overflow on small screens */
 }
 
 .resultCard {
   background: white;
   padding: 40px;
   width: 100%;
-  max-width: 600px;
+  max-width: 900px;              /* ✅ wider for AI content */
+  min-height: 500px;             /* ✅ taller card */
+  max-height: 85vh;              /* ✅ prevents full-screen takeover */
   border-radius: 16px;
   box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+  overflow-y: auto;              /* ✅ scroll for long AI output */
 }
+
+/* ================= SCORE ================= */
 
 .score {
   font-size: 56px;
@@ -23,6 +29,8 @@
 .good { color: #16a34a; }
 .avg { color: #ca8a04; }
 .bad { color: #dc2626; }
+
+/* ================= BADGE ================= */
 
 .badge {
   display: inline-block;
@@ -36,9 +44,13 @@
 .badge.avg { background: #fef9c3; }
 .badge.bad { background: #fee2e2; }
 
+/* ================= SECTIONS ================= */
+
 .section {
-  margin-top: 20px;
+  margin-top: 24px;
 }
+
+/* ================= PROGRESS BAR ================= */
 
 .progressBg {
   background: #e5e7eb;
@@ -54,3 +66,19 @@
 .progressFill.good { background: #16a34a; }
 .progressFill.avg { background: #ca8a04; }
 .progressFill.bad { background: #dc2626; }
+
+/* ================= AI RESULT BLOCK ================= */
+
+.aiResult {
+  margin-top: 20px;
+  padding: 16px;
+  min-height: 300px;             /* ✅ THIS IS THE KEY */
+  max-height: 450px;
+  overflow-y: auto;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  white-space: pre-wrap;         /* ✅ preserves bullets & spacing */
+  line-height: 1.6;
+  font-size: 14px;
+}

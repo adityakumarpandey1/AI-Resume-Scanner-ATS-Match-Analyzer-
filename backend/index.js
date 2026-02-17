@@ -22,7 +22,7 @@ const multer = require("multer");
 const pdf = require("pdf-parse");
 const mammoth = require("mammoth");
 const fs = require("fs");
-const OpenAI = require("openai");
+const Groq = require("groq-sdk");
 
 /* =========================
    APP INITIALIZATION
@@ -35,17 +35,17 @@ const app = express();
 ========================= */
 
 app.use(cors());
-app.use(express.json({ limit: "2mb" })); // ✅ AFTER app is created
+app.use(express.json({ limit: "2mb" })); 
 
 /* =========================
    OPENAI
 ========================= */
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
 });
 
-console.log("OPENAI KEY LOADED:", !!process.env.OPENAI_API_KEY);
+console.log("GROQ KEY LOADED:", !!process.env.GROQ_API_KEY);
 
 /* =========================
    FILE UPLOAD CONFIG
@@ -247,7 +247,7 @@ app.post("/analyze", upload.single("resume"), async (req, res) => {
       text = result.value;
     }
 
-    fs.unlink(req.file.path, () => {}); // cleanup
+    fs.unlink(req.file.path, () => {}); 
 
     const analysis = scoreResume(text);
     const suggestions = generateSuggestions(analysis.flags, analysis.score);
@@ -320,10 +320,10 @@ Resume:
 ${resumeText}
 `;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+    const response = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
       messages: [{ role: "user", content: prompt }],
-      temperature: 0.4,
+      temperature: 0.3,
     });
 
     res.json({
@@ -331,18 +331,10 @@ ${resumeText}
     });
 
   } catch (err) {
-    console.error("AI REWRITE ERROR:", err);
-
-    if (err.code === "insufficient_quota") {
-      return res.status(402).json({
-        error: "OpenAI quota exceeded. Please add billing or try later.",
-      });
-    }
-
+    console.error("GROQ REWRITE ERROR:", err);
     res.status(500).json({ error: "AI rewrite failed" });
   }
 });
-
 /* =========================
    SERVER
 ========================= */
