@@ -362,7 +362,15 @@ app.use(cors());
 app.use(express.json());
 
 app.get("/", (req, res) => {
-  res.json({ message: "ATS Backend is running 🚀" });
+  return res.status(200).json({
+    message: "ATS Backend is running on Vercel 🚀",
+  });
 });
 
-module.exports = app;
+/**
+ * 👇 THIS IS THE MOST IMPORTANT LINE
+ * Express must be exported as a handler
+ */
+module.exports = (req, res) => {
+  app(req, res);
+};
