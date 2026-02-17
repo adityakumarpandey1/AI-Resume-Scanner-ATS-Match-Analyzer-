@@ -355,48 +355,16 @@
 
 const express = require("express");
 const cors = require("cors");
-const multer = require("multer");
-const pdf = require("pdf-parse");
-const mammoth = require("mammoth");
-const fs = require("fs");
 
 const app = express();
 
-app.use(cors({ origin: "*" }));
-app.use(express.json({ limit: "5mb" }));
+app.use(cors());
+app.use(express.json());
 
-const upload = multer({ dest: "/tmp" });
-
-app.get("/", (req, res) => {
-  res.send("ATS Backend is Live!");
+app.get("/api", (req, res) => {
+  res.json({ message: "ATS Backend is running 🚀" });
 });
 
-app.post("/analyze", upload.single("resume"), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: "No file uploaded" });
-    }
+// other routes...
 
-    let text = "";
-
-    if (req.file.mimetype === "application/pdf") {
-      const data = await pdf(fs.readFileSync(req.file.path));
-      text = data.text;
-    } else {
-      const result = await mammoth.extractRawText({ path: req.file.path });
-      text = result.value;
-    }
-
-    fs.unlinkSync(req.file.path);
-
-    res.json({
-      score: 75,
-      matchedKeywords: ["javascript", "node"],
-      resumeText: text,
-    });
-  } catch (err) {
-    res.status(500).json({ error: "Analysis failed" });
-  }
-});
-
-module.exports = app;
+module.exports = app; // 🔥 REQUIRED
