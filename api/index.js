@@ -378,6 +378,7 @@ app.post("/analyze", upload.single("resume"), async (req, res) => {
     }
 
     let text = "";
+
     if (req.file.mimetype === "application/pdf") {
       const data = await pdf(fs.readFileSync(req.file.path));
       text = data.text;
@@ -388,9 +389,13 @@ app.post("/analyze", upload.single("resume"), async (req, res) => {
 
     fs.unlinkSync(req.file.path);
 
-    res.json({ score: 75, resumeText: text });
+    res.json({
+      score: 75,
+      matchedKeywords: ["javascript", "node"],
+      resumeText: text,
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Analysis failed" });
   }
 });
 
